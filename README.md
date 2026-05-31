@@ -1,5 +1,8 @@
 # 🔒 ApeGuard GitHub Action
 
+[![CI](https://github.com/pirateape/apeguard-action/actions/workflows/ci.yml/badge.svg)](https://github.com/pirateape/apeguard-action/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 **Layered security scanning in CI/CD** — Gitleaks (secrets), Semgrep (SAST), Trivy (SCA + container), and Nuclei (DAST). Every finding is mapped to the [Unified Zero Trust Framework (UZTF)](https://github.com/pirateape/unified-zero-trust-framework) with quantitative scoring.
 
 ```yaml
