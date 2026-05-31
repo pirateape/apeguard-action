@@ -1,0 +1,87 @@
+# ApeGuard GitHub Action
+# Reference: https://github.com/pirateape/ape-guard
+name: 'ApeGuard Security Scan'
+description: 'Layered security scanning with Zero Trust scoring — Gitleaks, Semgrep, Trivy, Nuclei. Maps every finding to the 8-pillar Unified Zero Trust Framework (UZTF).'
+author: 'pirateape'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  scan-path:
+    description: 'Directory or repository to scan'
+    required: false
+    default: '.'
+  layers:
+    description: 'Scanner layers to enable (comma-separated: secrets,sast,sca,container,dast)'
+    required: false
+    default: 'secrets,sast,sca'
+  format:
+    description: 'Report format (md, json, sarif, html)'
+    required: false
+    default: 'sarif'
+  upload-sarif:
+    description: 'Upload SARIF results to GitHub Security tab (requires format: sarif)'
+    required: false
+    default: 'true'
+  version:
+    description: 'ApeGuard version to use (e.g., "0.1.0" or "latest")'
+    required: false
+    default: 'latest'
+  fail-on:
+    description: 'Fail workflow on findings at this severity or above (never, high, critical)'
+    required: false
+    default: 'never'
+
+outputs:
+  overall-score:
+    description: 'Overall UZTF score (0–800)'
+    value: ${{ steps.run-scan.outputs.overall_score }}
+  findings-count:
+    description: 'Total number of findings detected'
+    value: ${{ steps.run-scan.outputs.findings_count }}
+  report-path:
+    description: 'Path to the generated report file'
+    value: ${{ steps.run-scan.outputs.report_path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install ApeGuard
+      id: install
+      shell: bash
+      env:
+        APEGUARD_VERSION: ${{ inputs.version }}
+        INSTALL_DIR: ${{ runner.temp }}/apeguard
+      run: ${{ github.action_path }}/scripts/install.sh
+
+    - name: Create output directory
+      shell: bash
+      run: mkdir -p "${{ runner.temp }}/apeguard-reports"
+
+    - name: Run ApeGuard scan
+      id: run-scan
+      shell: bash
+      env:
+        APEGUARD_BIN: ${{ runner.temp }}/apeguard/apeguard
+        SCAN_PATH: ${{ inputs.scan-path }}
+        LAYERS: ${{ inputs.layers }}
+        FORMAT: ${{ inputs.format }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        OUTPUT_DIR: ${{ runner.temp }}/apeguard-reports
+        RUNNER_OS: ${{ runner.os }}
+      run: ${{ github.action_path }}/scripts/run.sh
+
+    - name: Upload SARIF to GitHub Security tab
+      if: inputs.upload-sarif == 'true' && inputs.format == 'sarif'
+      uses: github/codeql-action/upload-sarif@832a06af3b8c6aa13a73c5e76eb8f19ed954bc4e # v3.28.14
+      with:
+        sarif_file: ${{ steps.run-scan.outputs.report-path }}
+        category: apeguard
+
+    - name: Upload report as workflow artifact
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      with:
+        name: apeguard-report
+        path: ${{ runner.temp }}/apeguard-reports/

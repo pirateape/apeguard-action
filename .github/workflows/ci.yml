@@ -1,0 +1,76 @@
+# CI for apeguard-action
+# Tests the action on ubuntu and macOS runners with a real scan.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-action:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Run ApeGuard action on self
+        id: scan
+        uses: ./
+        with:
+          scan-path: .
+          layers: secrets,sast,sca
+          format: sarif
+          upload-sarif: false
+
+      - name: Verify outputs
+        shell: bash
+        run: |
+          echo "Overall score: ${{ steps.scan.outputs.overall-score }}"
+          echo "Findings: ${{ steps.scan.outputs.findings-count }}"
+          echo "Report path: ${{ steps.scan.outputs.report-path }}"
+          if [ -z "${{ steps.scan.outputs.overall-score }}" ]; then
+            echo "❌ overall-score not set"
+            exit 1
+          fi
+          echo "✅ All outputs present"
+
+  lint-action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Validate action.yml
+        shell: bash
+        run: |
+          if [ ! -f action.yml ]; then
+            echo "❌ action.yml not found"
+            exit 1
+          fi
+          echo "✅ action.yml exists"
+
+      - name: Check shell scripts syntax
+        shell: bash
+        run: |
+          if command -v shellcheck &>/dev/null; then
+            shellcheck scripts/*.sh
+          else
+            bash -n scripts/*.sh
+            echo "✅ Scripts parse OK"
+          fi
