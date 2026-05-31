@@ -75,7 +75,7 @@ runs:
 
     - name: Upload SARIF to GitHub Security tab
       if: inputs.upload-sarif == 'true' && inputs.format == 'sarif'
-      uses: github/codeql-action/upload-sarif@832a06af3b8c6aa13a73c5e76eb8f19ed954bc4e # v3.28.14
+      uses: github/codeql-action/upload-sarif@fee9466b8957867761f2d78f922ab084e3e2dd17 # v3
       with:
         sarif_file: ${{ steps.run-scan.outputs.report-path }}
         category: apeguard

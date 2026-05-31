@@ -34,6 +34,7 @@ done
 LAYER_FLAGS="${LAYER_FLAGS#,}"
 
 # Build failure flag
+# shellcheck disable=SC2086 # intentional word splitting for flags
 case "$FAIL_ON" in
   high)     FAIL_FLAG="--fail-on high" ;;
   critical) FAIL_FLAG="--fail-on critical" ;;
@@ -77,13 +78,17 @@ if [ -f "$JSON_REPORT" ]; then
   OVERALL_SCORE=$(python3 -c "import json; r=json.load(open('${JSON_REPORT}')); print(r.get('scorecard',{}).get('overall_score',0))" 2>/dev/null || echo "0")
   FINDINGS_COUNT=$(python3 -c "import json; r=json.load(open('${JSON_REPORT}')); print(len(r.get('findings',[])))" 2>/dev/null || echo "0")
 
-  echo "overall_score=${OVERALL_SCORE}" >> "$GITHUB_OUTPUT"
-  echo "findings_count=${FINDINGS_COUNT}" >> "$GITHUB_OUTPUT"
-  echo "report_path=${REPORT_FILE}" >> "$GITHUB_OUTPUT"
+  {
+    echo "overall_score=${OVERALL_SCORE}"
+    echo "findings_count=${FINDINGS_COUNT}"
+    echo "report_path=${REPORT_FILE}"
+  } >> "$GITHUB_OUTPUT"
 else
-  echo "overall_score=0" >> "$GITHUB_OUTPUT"
-  echo "findings_count=0" >> "$GITHUB_OUTPUT"
-  echo "report_path=${REPORT_FILE}" >> "$GITHUB_OUTPUT"
+  {
+    echo "overall_score=0"
+    echo "findings_count=0"
+    echo "report_path=${REPORT_FILE}"
+  } >> "$GITHUB_OUTPUT"
 fi
 
 # Summary for action log
