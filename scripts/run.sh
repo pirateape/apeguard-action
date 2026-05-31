@@ -54,7 +54,7 @@ set +e
   --format "$FORMAT" \
   --output-dir "$OUTPUT_DIR" \
   --quiet \
-  "${FAIL_ARGS[@]}" \
+  ${FAIL_ARGS[@]+"${FAIL_ARGS[@]}"} \
   "$SCAN_PATH"
 
 SCAN_EXIT=$?
@@ -62,7 +62,7 @@ set -e
 
 # Check exit code
 if [ $SCAN_EXIT -ne 0 ]; then
-  if [ ${#FAIL_ARGS[@]} -gt 0 ]; then
+  if [ "${FAIL_ON}" != "never" ]; then
     echo "⚠️  Scan found issues at or above '${FAIL_ON}' severity (exit code: ${SCAN_EXIT})"
   else
     echo "❌ Scan failed with exit code ${SCAN_EXIT}"
