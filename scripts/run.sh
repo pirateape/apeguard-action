@@ -33,12 +33,11 @@ done
 # Remove leading comma
 LAYER_FLAGS="${LAYER_FLAGS#,}"
 
-# Build failure flag
-# shellcheck disable=SC2086 # intentional word splitting for flags
+# Build failure flag (array to avoid SC2086 word-splitting issues)
+FAIL_ARGS=()
 case "$FAIL_ON" in
-  high)     FAIL_FLAG="--fail-on high" ;;
-  critical) FAIL_FLAG="--fail-on critical" ;;
-  *)        FAIL_FLAG="" ;;
+  high)     FAIL_ARGS=(--fail-on high) ;;
+  critical) FAIL_ARGS=(--fail-on critical) ;;
 esac
 
 # Run the scan
@@ -55,7 +54,7 @@ set +e
   --format "$FORMAT" \
   --output-dir "$OUTPUT_DIR" \
   --quiet \
-  $FAIL_FLAG \
+  "${FAIL_ARGS[@]}" \
   "$SCAN_PATH"
 
 SCAN_EXIT=$?
@@ -63,7 +62,7 @@ set -e
 
 # Check exit code
 if [ $SCAN_EXIT -ne 0 ]; then
-  if [ -n "$FAIL_FLAG" ]; then
+  if [ ${#FAIL_ARGS[@]} -gt 0 ]; then
     echo "⚠️  Scan found issues at or above '${FAIL_ON}' severity (exit code: ${SCAN_EXIT})"
   else
     echo "❌ Scan failed with exit code ${SCAN_EXIT}"
